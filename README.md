@@ -24,6 +24,10 @@ All ratings, approval rates, and community feedback are synced in real-time to a
 4. **First Card Gesture Hint**:
    - On the very first card, an animated prompt (`⟵ Swipe Left (BAD) • Swipe Right (GOOD) ⟶`) guides the user.
    - Dismisses immediately on your first swipe or interaction and never appears again.
+5. **🔄 Automatic Refresh Resume & Position Tracking**:
+   - Every swipe instantly persists your exact card position to `localStorage` and synchronizes the browser URL (`?card=X`).
+   - If you reload the page, close the browser, or switch decks, it **instantly resumes from the exact card you were on**.
+   - A clean position badge in the header (`Card X / Total`) shows your live progress. Click it anytime to restart from Card 1.
 
 ---
 

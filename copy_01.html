@@ -26,6 +26,11 @@
       </a>
 
       <div class="header-actions">
+        <!-- Live Deck Position Indicator (Click to Restart) -->
+        <button class="card-position-pill" id="deck-position-pill" onclick="confirmRestart()" title="Current Card Position • Click to Restart">
+          <span id="pos-curr">1</span> / <span id="pos-total">544</span>
+        </button>
+
         <!-- Stats / History Button -->
         <button class="icon-btn" onclick="openHistoryModal()" title="View Swiped Cards & Export" aria-label="Swiped Cards">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
@@ -119,14 +124,14 @@
     <div class="modal-card" style="max-width: 600px; max-height: 85vh; display: flex; flex-direction: column;">
       <div class="modal-title" style="justify-content: space-between;">
         <div style="display: flex; align-items: center; gap: 0.5rem;">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--accent-emerald)" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
-          <span>Swiped Cards Log</span>
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--accent-indigo)" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          <span>Swiped Cards History</span>
         </div>
         <button class="icon-btn" onclick="closeHistoryModal()">✕</button>
       </div>
 
-      <div id="history-items-container" style="flex: 1; overflow-y: auto; margin: 1rem 0; padding-right: 0.25rem;">
-        <!-- Filled by JS -->
+      <div style="flex: 1; overflow-y: auto; margin: 1rem 0; padding-right: 0.25rem;" id="history-items-container">
+        <!-- Dynamically injected rating list -->
       </div>
 
       <div style="display: flex; gap: 0.5rem; justify-content: space-between; align-items: center; padding-top: 0.75rem; border-top: 1px solid var(--border-subtle);">
@@ -161,14 +166,63 @@
     const deckStage = document.getElementById('card-deck-stage');
     const toast = document.getElementById('app-toast');
 
+    // Save and sync current card position to localStorage and URL query param
+    function saveCurrentPosition(idx, updateUrl = true) {
+      try {
+        localStorage.setItem('psir_swipe_idx_' + ACTIVE_DECK_ID, idx.toString());
+        if (cardDeck && cardDeck[idx]) {
+          localStorage.setItem('psir_swipe_card_id_' + ACTIVE_DECK_ID, cardDeck[idx].id || '');
+        }
+        if (updateUrl && window.history && window.history.replaceState) {
+          const u = new URL(window.location.href);
+          u.searchParams.set('card', (idx + 1).toString());
+          window.history.replaceState({ cardIndex: idx }, '', u.toString());
+        }
+        updatePositionIndicator(idx);
+      } catch (e) {
+        console.warn('Error saving swipe position:', e);
+      }
+    }
+
+    // Update position badge in header
+    function updatePositionIndicator(idx) {
+      const currEl = document.getElementById('pos-curr');
+      const totalEl = document.getElementById('pos-total');
+      const pill = document.getElementById('deck-position-pill');
+      const targetIdx = (idx !== undefined ? idx : currentIndex);
+      if (currEl) currEl.textContent = Math.min(targetIdx + 1, (cardDeck && cardDeck.length) || 1);
+      if (totalEl) totalEl.textContent = (cardDeck && cardDeck.length) || 0;
+      if (pill) pill.style.display = 'inline-flex';
+    }
+
+    // Prompt to restart deck from Card 1
+    function confirmRestart() {
+      if (currentIndex > 0) {
+        const ok = window.confirm(`You are currently on Card ${currentIndex + 1} of ${cardDeck.length}. Restart deck from Card 1?`);
+        if (ok) {
+          resetCurrentDeck();
+        }
+      } else {
+        showToast('Already on Card 1');
+      }
+    }
+
     // Initialize App
     function initApp() {
       loadDeckData();
       renderStack();
       bindKeyboardShortcuts();
+      updatePositionIndicator();
+
+      // Show toast if resuming past card 1
+      if (currentIndex > 0 && currentIndex < cardDeck.length) {
+        setTimeout(() => {
+          showToast(`📍 Resumed from Card ${currentIndex + 1} of ${cardDeck.length}`);
+        }, 350);
+      }
     }
 
-    // Load active deck from SWIPE_TILES_DATA
+    // Load active deck from SWIPE_TILES_DATA & restore position
     function loadDeckData() {
       const allData = window.SWIPE_TILES_DATA || {};
       if (ACTIVE_DECK_ID === 'all') {
@@ -183,11 +237,28 @@
         cardDeck = (allData.all_cards_flat || []).slice(0, 30);
       }
 
-      // Restore session index if available
-      const savedIndex = parseInt(localStorage.getItem('psir_swipe_idx_' + ACTIVE_DECK_ID) || '0', 10);
-      if (savedIndex > 0 && savedIndex < cardDeck.length) {
-        currentIndex = savedIndex;
+      // Priority 1: Check URL parameter ?card=X (1-indexed for direct bookmark/sharing)
+      let resolvedIndex = 0;
+      let hasUrlParam = false;
+      try {
+        const urlParams = new URLSearchParams(window.location.search);
+        const cardParam = parseInt(urlParams.get('card') || '', 10);
+        if (!isNaN(cardParam) && cardParam >= 1) {
+          resolvedIndex = Math.min(cardParam - 1, cardDeck.length);
+          hasUrlParam = true;
+        }
+      } catch (e) {}
+
+      // Priority 2: Check localStorage if no URL query param was specified
+      if (!hasUrlParam) {
+        const savedIndex = parseInt(localStorage.getItem('psir_swipe_idx_' + ACTIVE_DECK_ID) || '0', 10);
+        if (savedIndex > 0) {
+          resolvedIndex = Math.min(savedIndex, cardDeck.length);
+        }
       }
+
+      currentIndex = resolvedIndex;
+      saveCurrentPosition(currentIndex, true);
     }
 
     // Dismiss gesture hint once
@@ -298,6 +369,7 @@
 
       dismissGestureHint();
       const card = cardDeck[currentIndex];
+      const nextIdx = currentIndex + 1;
 
       // Stamp glow and card exit right
       const stamp = document.getElementById('stamp-good');
@@ -320,9 +392,11 @@
 
       showToast(`💚 Rated as GOOD!`);
 
+      // Persist next position immediately
+      saveCurrentPosition(nextIdx);
+
       setTimeout(() => {
-        currentIndex++;
-        localStorage.setItem('psir_swipe_idx_' + ACTIVE_DECK_ID, currentIndex.toString());
+        currentIndex = nextIdx;
         renderStack();
       }, 320);
     }
@@ -334,6 +408,7 @@
 
       dismissGestureHint();
       const card = cardDeck[currentIndex];
+      const nextIdx = currentIndex + 1;
 
       // Stamp glow and card exit left
       const stamp = document.getElementById('stamp-bad');
@@ -356,9 +431,11 @@
 
       showToast(`❌ Rated as BAD`);
 
+      // Persist next position immediately
+      saveCurrentPosition(nextIdx);
+
       setTimeout(() => {
-        currentIndex++;
-        localStorage.setItem('psir_swipe_idx_' + ACTIVE_DECK_ID, currentIndex.toString());
+        currentIndex = nextIdx;
         renderStack();
       }, 320);
     }
@@ -366,9 +443,9 @@
     function undoLastCard() {
       if (currentIndex > 0) {
         currentIndex--;
-        localStorage.setItem('psir_swipe_idx_' + ACTIVE_DECK_ID, currentIndex.toString());
+        saveCurrentPosition(currentIndex);
         renderStack();
-        showToast('Returned to previous card');
+        showToast('↩️ Returned to previous card');
       } else {
         showToast('At the beginning of deck');
       }
@@ -385,7 +462,7 @@
       const stampBad = document.getElementById('stamp-bad');
 
       function onStart(e) {
-        if (e.target.closest('button')) {
+        if (e.target.closest('button, a')) {
           return;
         }
         dismissGestureHint();
@@ -394,6 +471,10 @@
         startY = point.clientY;
         startX = point.clientX;
         cardEl.classList.remove('reset-spring');
+
+        // Dynamically listen on window only while dragging
+        window.addEventListener('mousemove', onMove);
+        window.addEventListener('mouseup', onEnd);
       }
 
       function onMove(e) {
@@ -422,6 +503,9 @@
       function onEnd(e) {
         if (!isDragging) return;
         isDragging = false;
+        window.removeEventListener('mousemove', onMove);
+        window.removeEventListener('mouseup', onEnd);
+
         const point = e.changedTouches ? e.changedTouches[0] : e;
         const dx = point.clientX - startX;
 
@@ -446,8 +530,6 @@
 
       // Mouse drag events
       cardEl.addEventListener('mousedown', onStart);
-      window.addEventListener('mousemove', onMove);
-      window.addEventListener('mouseup', onEnd);
     }
 
     // Keyboard Shortcuts (Left Arrow = Bad, Right Arrow = Good)
@@ -472,6 +554,7 @@
       if (window.SwipeSound && window.SwipeSound.playCelebration) {
         window.SwipeSound.playCelebration();
       }
+      updatePositionIndicator(cardDeck.length - 1);
 
       deckStage.innerHTML = `
         <div class="completion-card">
@@ -490,9 +573,17 @@
     function resetCurrentDeck() {
       currentIndex = 0;
       localStorage.removeItem('psir_swipe_idx_' + ACTIVE_DECK_ID);
+      localStorage.removeItem('psir_swipe_card_id_' + ACTIVE_DECK_ID);
       localStorage.removeItem('psir_first_gesture_seen');
       hasSwipedFirstCard = false;
+      try {
+        const u = new URL(window.location.href);
+        u.searchParams.delete('card');
+        window.history.replaceState({}, '', u.toString());
+      } catch (e) {}
+      saveCurrentPosition(0, true);
       renderStack();
+      showToast('🔄 Restarted deck from Card 1');
     }
 
     // Supabase Modal & Connection Management
@@ -519,54 +610,60 @@
       const key = document.getElementById('supabase-key-input').value;
       const feedback = document.getElementById('supabase-test-feedback');
 
-      feedback.innerHTML = '<span style="color: var(--accent-cyan);">Testing Supabase connection...</span>';
+      if (!url || !key) {
+        feedback.innerHTML = '<span style="color: var(--accent-rose)">Please provide both Project URL and Anon Key</span>';
+        return;
+      }
 
-      const res = await window.SwipeSupabase.saveConfig(url, key);
+      feedback.innerHTML = '<span style="color: var(--text-muted)">Testing Supabase connection...</span>';
+      const res = await window.SwipeSupabase.configure(url, key);
+
       if (res.success) {
-        feedback.innerHTML = `<span style="color: var(--accent-emerald);">✔ ${res.message}</span>`;
+        feedback.innerHTML = `<span style="color: var(--accent-emerald)">✓ ${res.message}</span>`;
         setTimeout(() => {
           closeSupabaseModal();
-          showToast('Supabase Connected & Synced!');
-        }, 900);
+          showToast('Connected to Supabase cloud!');
+        }, 1200);
       } else {
-        feedback.innerHTML = `<span style="color: var(--accent-rose);">✖ ${res.message}</span>`;
+        feedback.innerHTML = `<span style="color: var(--accent-rose)">✕ ${res.message}</span>`;
       }
     }
 
-    // History & Export Modal
+    // Ratings History & Export Drawer
     function openHistoryModal() {
       const modal = document.getElementById('modal-history');
       const container = document.getElementById('history-items-container');
       const countLabel = document.getElementById('history-count-label');
 
-      const history = window.SwipeSupabase ? window.SwipeSupabase.getRatingsHistory() : [];
-      countLabel.innerText = `${history.length} total cards swiped`;
+      if (!window.SwipeSupabase) return;
+
+      const history = window.SwipeSupabase.getRatingsHistory();
+      countLabel.textContent = `${history.length} cards swiped`;
 
       if (history.length === 0) {
-        container.innerHTML = '<p style="color: var(--text-muted); font-size: 0.85rem; text-align: center; padding: 2rem 0;">No tiles swiped yet. Swipe Left for Bad or Right for Good!</p>';
-      } else {
-        const goodCount = history.filter(h => h.rating === 'good').length;
-        const badCount = history.filter(h => h.rating === 'bad').length;
-
-        let summaryHtml = `
-          <div style="display: flex; gap: 0.75rem; margin-bottom: 0.75rem; font-size: 0.8rem; font-weight: 700;">
-            <span style="color: #34d399; background: rgba(16,185,129,0.12); padding: 3px 10px; border-radius: 20px;">💚 Good: ${goodCount}</span>
-            <span style="color: var(--accent-rose); background: rgba(244,63,94,0.12); padding: 3px 10px; border-radius: 20px;">❌ Bad: ${badCount}</span>
+        container.innerHTML = `
+          <div style="text-align: center; padding: 2.5rem 1rem; color: var(--text-muted);">
+            <div style="font-size: 2rem; margin-bottom: 0.5rem;">📭</div>
+            <div style="font-weight: 600; font-size: 0.95rem;">No cards swiped yet</div>
+            <div style="font-size: 0.8rem; margin-top: 0.25rem;">Swipe Left (Bad) or Right (Good) to begin recording feedback.</div>
           </div>
         `;
-
-        container.innerHTML = summaryHtml + history.slice().reverse().map(item => `
-          <div style="background: rgba(0,0,0,0.25); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 0.75rem 1rem; margin-bottom: 0.5rem;">
-            <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 0.5rem; margin-bottom: 0.35rem;">
-              <span style="font-weight: 700; font-size: 0.88rem; color: var(--text-primary);">${item.content_title}</span>
-              <span style="font-weight: 800; font-size: 0.82rem; padding: 2px 8px; border-radius: 4px; ${item.rating === 'good' ? 'color: #34d399; background: rgba(16,185,129,0.15);' : 'color: var(--accent-rose); background: rgba(244,63,94,0.15);'}">${item.rating === 'good' ? '✔ GOOD' : '✕ BAD'}</span>
+      } else {
+        container.innerHTML = history.slice().reverse().map((r, i) => {
+          const isGood = r.rating === 'good';
+          const badgeColor = isGood ? 'var(--accent-emerald)' : 'var(--accent-rose)';
+          const badgeText = isGood ? '💚 GOOD' : '❌ BAD';
+          return `
+            <div style="padding: 0.75rem 0.85rem; margin-bottom: 0.5rem; background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm);">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
+                <span style="font-weight: 700; font-size: 0.75rem; color: ${badgeColor};">${badgeText}</span>
+                <span style="font-size: 0.7rem; color: var(--text-muted);">${r.topper_name || ''}</span>
+              </div>
+              <div style="font-weight: 600; font-size: 0.86rem; color: var(--text-primary); margin-bottom: 0.25rem;">${r.content_title || ''}</div>
+              <div style="font-size: 0.76rem; color: var(--text-secondary); line-height: 1.4;">${(r.content_quote || '').slice(0, 140)}...</div>
             </div>
-            <div style="font-size: 0.75rem; color: var(--accent-rose); font-weight: 600; margin-bottom: 0.25rem;">― ${item.author_attribution}</div>
-            <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.7rem; color: var(--text-muted);">
-              <span>${item.copy_id.toUpperCase()} • ${item.category}</span>
-            </div>
-          </div>
-        `).join('');
+          `;
+        }).join('');
       }
 
       modal.classList.add('open');
@@ -596,13 +693,26 @@
       }, 1800);
     }
 
-    // Run on load
-    window.addEventListener('DOMContentLoaded', () => {
+    // Robust Boot Loader & Page Exit Safety Listeners
+    function boot() {
       const savedTheme = localStorage.getItem('psir_theme');
       if (savedTheme) {
         document.documentElement.setAttribute('data-theme', savedTheme);
       }
       initApp();
+    }
+
+    if (document.readyState === 'loading') {
+      window.addEventListener('DOMContentLoaded', boot);
+    } else {
+      boot();
+    }
+
+    // Safety beforeunload listener to guarantee resume position is saved on browser refresh or tab close
+    window.addEventListener('beforeunload', () => {
+      try {
+        localStorage.setItem('psir_swipe_idx_' + ACTIVE_DECK_ID, currentIndex.toString());
+      } catch (e) {}
     });
   </script>
 </body>

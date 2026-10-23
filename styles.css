@@ -208,6 +208,30 @@ body {
   background: rgba(255, 255, 255, 0.05);
 }
 
+.card-position-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.32rem 0.68rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  font-family: var(--font-mono);
+  color: var(--accent-indigo-light);
+  background: rgba(99, 102, 241, 0.12);
+  border: 1px solid rgba(99, 102, 241, 0.28);
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  transition: var(--transition-fast);
+  white-space: nowrap;
+}
+
+.card-position-pill:hover {
+  background: rgba(99, 102, 241, 0.22);
+  border-color: var(--accent-indigo);
+  color: #ffffff;
+  transform: translateY(-1px);
+}
+
 /* Deck Selector Drawer / Modal */
 .deck-switcher-bar {
   background: var(--bg-surface);
