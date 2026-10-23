@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Copy 09 • Shrishti Dabas (AIR 6 - Test 03) | UPSC PSIR 300+ Swipe</title>
+  <meta name="description" content="Tinder-style swipe deck for UPSC PSIR topper value addition points. Swipe Left for Bad, Swipe Right for Good.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Fira+Code:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <!-- Supabase Official JS Client from CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+
+  <!-- Top App Header -->
+  <header class="app-header">
+    <div class="header-inner">
+      <a href="index.html" class="brand-wrap" title="SwipeVault Hub">
+        <div class="brand-icon">PSIR</div>
+        <div>
+          <div class="brand-title">SwipeVault</div>
+          <div class="brand-sub">Topper Value Addition</div>
+        </div>
+      </a>
+
+      <div class="header-actions">
+        <!-- Stats / History Button -->
+        <button class="icon-btn" onclick="openHistoryModal()" title="View Swiped Cards & Export" aria-label="Swiped Cards">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+        </button>
+
+        <!-- Theme Toggle -->
+        <button class="icon-btn" id="btn-theme" onclick="toggleTheme()" title="Toggle Theme" aria-label="Toggle Theme">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Horizontal Scrollable Deck Selector -->
+  <nav class="deck-switcher-bar" aria-label="Topper Copy Deck Switcher">
+    <div class="deck-pills-wrap">
+      <a href="index.html" class="deck-pill ">🌐 All Copies (544)</a>
+      <a href="elite_deck.html" class="deck-pill ">🔥 Elite 10% Vault (43)</a>
+      <a href="copy_01.html" class="deck-pill ">Copy 01 • AIR 121</a>
+      <a href="copy_02.html" class="deck-pill ">Copy 02 • AIR 56</a>
+      <a href="copy_03.html" class="deck-pill ">Copy 03 • AIR 103</a>
+      <a href="copy_04.html" class="deck-pill ">Copy 04 • AIR 6</a>
+      <a href="copy_05.html" class="deck-pill ">Copy 05 • AIR 15</a>
+      <a href="copy_06.html" class="deck-pill ">Copy 06 • AIR 6</a>
+      <a href="copy_07.html" class="deck-pill ">Copy 07 • AIR 34</a>
+      <a href="copy_08.html" class="deck-pill ">Copy 08 • AIR 6</a>
+      <a href="copy_09.html" class="deck-pill active">Copy 09 • AIR 6</a>
+      <a href="copy_10.html" class="deck-pill ">Copy 10 • AIR 15</a>
+    </div>
+  </nav>
+
+  <!-- Swipe Stage Container -->
+  <main class="stage-container">
+    <div class="card-deck" id="card-deck-stage">
+      <!-- Cards dynamically injected by JavaScript -->
+    </div>
+
+    <!-- Tactile Tinder-Style Bottom Controls -->
+    <div class="deck-bottom-bar">
+      <button class="tinder-btn tinder-btn-bad" onclick="swipeLeftBad()" title="Swipe Left • Rate as BAD (←)" aria-label="Rate Bad">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+      </button>
+
+      <button class="tinder-btn tinder-btn-undo" onclick="undoLastCard()" title="Undo Last Card (Z)" aria-label="Undo">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/></svg>
+      </button>
+
+      <button class="tinder-btn tinder-btn-good" onclick="swipeRightGood()" title="Swipe Right • Rate as GOOD (→)" aria-label="Rate Good">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
+      </button>
+    </div>
+  </main>
+
+  <!-- Supabase Settings Modal (Accessible via Settings / History) -->
+  <div class="modal-overlay" id="modal-supabase">
+    <div class="modal-card">
+      <div class="modal-title">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--accent-emerald)" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+        <span>Supabase Cloud Sync</span>
+      </div>
+      <p style="font-size: 0.82rem; color: var(--text-secondary); margin-bottom: 1rem;">
+        Sync all your Good (Right) and Bad (Left) swipe ratings to your Supabase PostgreSQL cloud database in real-time.
+      </p>
+
+      <div class="form-group">
+        <label class="form-label">Project URL</label>
+        <input type="text" id="supabase-url-input" class="form-input" placeholder="https://your-project-id.supabase.co">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Anon / Public API Key</label>
+        <input type="password" id="supabase-key-input" class="form-input" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...">
+        <div class="form-help">Found in Supabase Dashboard → Project Settings → API.</div>
+      </div>
+
+      <div id="supabase-test-feedback" style="font-size: 0.8rem; margin-bottom: 1rem; min-height: 1.2rem;"></div>
+
+      <div style="display: flex; gap: 0.5rem; justify-content: flex-end;">
+        <button class="aux-btn" onclick="closeSupabaseModal()">Cancel</button>
+        <button class="deck-pill active" style="padding: 0.5rem 1.25rem; font-size: 0.85rem;" onclick="saveSupabaseSettings()">Save & Connect</button>
+      </div>
+
+      <div style="margin-top: 1rem; padding-top: 0.85rem; border-top: 1px solid var(--border-subtle); font-size: 0.74rem; color: var(--text-muted);">
+        💡 Need the SQL schema? Open <a href="supabase_schema.sql" target="_blank" style="color: var(--accent-indigo-light); font-weight: 700;">supabase_schema.sql</a> in this folder and run it in your Supabase SQL editor.
+      </div>
+    </div>
+  </div>
+
+  <!-- Ratings History & Export Drawer / Modal -->
+  <div class="modal-overlay" id="modal-history">
+    <div class="modal-card" style="max-width: 600px; max-height: 85vh; display: flex; flex-direction: column;">
+      <div class="modal-title" style="justify-content: space-between;">
+        <div style="display: flex; align-items: center; gap: 0.5rem;">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--accent-emerald)" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+          <span>Swiped Cards Log</span>
+        </div>
+        <button class="icon-btn" onclick="closeHistoryModal()">✕</button>
+      </div>
+
+      <div id="history-items-container" style="flex: 1; overflow-y: auto; margin: 1rem 0; padding-right: 0.25rem;">
+        <!-- Filled by JS -->
+      </div>
+
+      <div style="display: flex; gap: 0.5rem; justify-content: space-between; align-items: center; padding-top: 0.75rem; border-top: 1px solid var(--border-subtle);">
+        <span id="history-count-label" style="font-size: 0.78rem; color: var(--text-muted);">0 cards swiped</span>
+        <div style="display: flex; gap: 0.5rem; align-items: center;">
+          <button class="aux-btn" onclick="openSupabaseModal()" style="font-size: 0.75rem;">⚙️ Supabase</button>
+          <button class="aux-btn" onclick="window.SwipeSupabase.exportRatingsCSV()">Export CSV</button>
+          <button class="deck-pill active" style="padding: 0.4rem 1rem; font-size: 0.8rem;" onclick="window.SwipeSupabase.exportRatingsJSON()">Export JSON</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notice -->
+  <div class="toast-notice" id="app-toast">
+    <span id="toast-msg">Card swiped!</span>
+  </div>
+
+  <!-- Core Scripts -->
+  <script src="cards_data.js"></script>
+  <script src="supabase_client.js"></script>
+
+  <script>
+    // Configuration & State
+    const ACTIVE_DECK_ID = "copy_09";
+    let cardDeck = [];
+    let currentIndex = 0;
+    let historyUndoStack = [];
+    let hasSwipedFirstCard = localStorage.getItem('psir_first_gesture_seen') === 'true';
+
+    // DOM Elements
+    const deckStage = document.getElementById('card-deck-stage');
+    const toast = document.getElementById('app-toast');
+
+    // Initialize App
+    function initApp() {
+      loadDeckData();
+      renderStack();
+      bindKeyboardShortcuts();
+    }
+
+    // Load active deck from SWIPE_TILES_DATA
+    function loadDeckData() {
+      const allData = window.SWIPE_TILES_DATA || {};
+      if (ACTIVE_DECK_ID === 'all') {
+        cardDeck = allData.all_cards_flat || [];
+      } else if (ACTIVE_DECK_ID === 'elite_curated') {
+        cardDeck = (allData.cards_by_copy && allData.cards_by_copy['elite_curated']) || [];
+      } else {
+        cardDeck = (allData.cards_by_copy && allData.cards_by_copy[ACTIVE_DECK_ID]) || [];
+      }
+
+      if (!cardDeck || cardDeck.length === 0) {
+        cardDeck = (allData.all_cards_flat || []).slice(0, 30);
+      }
+
+      // Restore session index if available
+      const savedIndex = parseInt(localStorage.getItem('psir_swipe_idx_' + ACTIVE_DECK_ID) || '0', 10);
+      if (savedIndex > 0 && savedIndex < cardDeck.length) {
+        currentIndex = savedIndex;
+      }
+    }
+
+    // Dismiss gesture hint once
+    function dismissGestureHint() {
+      const hint = document.getElementById('first-card-gesture');
+      if (hint && !hint.classList.contains('dismissed')) {
+        hint.classList.add('dismissed');
+        setTimeout(() => {
+          if (hint && hint.parentNode) hint.parentNode.removeChild(hint);
+        }, 360);
+      }
+      hasSwipedFirstCard = true;
+      localStorage.setItem('psir_first_gesture_seen', 'true');
+    }
+
+    // Render 3D Card Stack (Top card active, background card preview)
+    function renderStack() {
+      if (currentIndex >= cardDeck.length) {
+        renderCompletionScreen();
+        return;
+      }
+
+      const card = cardDeck[currentIndex];
+      const nextCard = cardDeck[currentIndex + 1];
+      const thirdCard = cardDeck[currentIndex + 2];
+
+      let html = '';
+
+      // Third Card Preview
+      if (thirdCard) {
+        html += `
+          <div class="swipe-card card-third">
+            <div class="card-top-bar">
+              <span class="topper-badge">${thirdCard.topper_name}</span>
+            </div>
+            <div class="card-content-body">
+              <div class="card-quote-title">${thirdCard.content_title}</div>
+            </div>
+          </div>
+        `;
+      }
+
+      // Next Card Preview
+      if (nextCard) {
+        html += `
+          <div class="swipe-card card-next">
+            <div class="card-top-bar">
+              <span class="topper-badge">${nextCard.topper_name} (${nextCard.air || 'AIR'})</span>
+            </div>
+            <div class="card-content-body">
+              <div class="card-quote-title">${nextCard.content_title}</div>
+              <div class="card-author-line">― ${nextCard.author_attribution || nextCard.topper_name}</div>
+              <div class="card-context-box">${nextCard.context || ''}</div>
+            </div>
+          </div>
+        `;
+      }
+
+      // Gesture hint overlay: ONLY rendered on the very first card (index 0) if not seen yet
+      let gestureOverlayHtml = '';
+      if (currentIndex === 0 && !hasSwipedFirstCard) {
+        gestureOverlayHtml = `
+          <div class="first-card-gesture-hint" id="first-card-gesture" onclick="dismissGestureHint()">
+            <span class="gesture-arrow-left">⟵ Swipe Left (BAD)</span>
+            <span style="opacity: 0.4;">•</span>
+            <span class="gesture-arrow-right">Swipe Right (GOOD) ⟶</span>
+          </div>
+        `;
+      }
+
+      // Active Top Card: Clean, uncluttered layout
+      html += `
+        <div class="swipe-card card-active" id="active-swipe-card">
+          <!-- Tinder Dynamic Feedback Stamps -->
+          <div class="swipe-stamp stamp-bad" id="stamp-bad">BAD</div>
+          <div class="swipe-stamp stamp-good" id="stamp-good">GOOD</div>
+
+          ${gestureOverlayHtml}
+
+          <div>
+            <div class="card-top-bar">
+              <span class="topper-badge">${card.topper_name} (${card.air || 'AIR'})</span>
+            </div>
+
+            <div class="card-content-body">
+              <div class="card-quote-title">${card.content_title}</div>
+              <div class="card-author-line">― ${card.author_attribution || card.topper_name}</div>
+              <div class="card-context-box">
+                <strong>Context:</strong> ${card.context || card.content_quote}
+              </div>
+              <div class="card-meta-row">
+                <span class="card-domain-tag">📌 ${card.syllabus_domain || 'PSIR Core'}</span>
+                <span>${card.question_ref ? card.question_ref : 'Exam Ready'}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+
+      deckStage.innerHTML = html;
+      attachSwipeGestures(document.getElementById('active-swipe-card'));
+    }
+
+    // Execute Swipe Right: GOOD
+    function swipeRightGood() {
+      const activeCardEl = document.getElementById('active-swipe-card');
+      if (!activeCardEl) return;
+
+      dismissGestureHint();
+      const card = cardDeck[currentIndex];
+
+      // Stamp glow and card exit right
+      const stamp = document.getElementById('stamp-good');
+      if (stamp) stamp.style.opacity = '1';
+
+      activeCardEl.classList.add('swiping-right');
+      if (window.SwipeSound && window.SwipeSound.playSwipeRight) {
+        window.SwipeSound.playSwipeRight();
+      }
+
+      historyUndoStack.push({
+        index: currentIndex,
+        rating: 'good',
+        card: card
+      });
+
+      if (window.SwipeSupabase) {
+        window.SwipeSupabase.submitRating(card, 'good', []);
+      }
+
+      showToast(`💚 Rated as GOOD!`);
+
+      setTimeout(() => {
+        currentIndex++;
+        localStorage.setItem('psir_swipe_idx_' + ACTIVE_DECK_ID, currentIndex.toString());
+        renderStack();
+      }, 320);
+    }
+
+    // Execute Swipe Left: BAD
+    function swipeLeftBad() {
+      const activeCardEl = document.getElementById('active-swipe-card');
+      if (!activeCardEl) return;
+
+      dismissGestureHint();
+      const card = cardDeck[currentIndex];
+
+      // Stamp glow and card exit left
+      const stamp = document.getElementById('stamp-bad');
+      if (stamp) stamp.style.opacity = '1';
+
+      activeCardEl.classList.add('swiping-left');
+      if (window.SwipeSound && window.SwipeSound.playSwipeLeft) {
+        window.SwipeSound.playSwipeLeft();
+      }
+
+      historyUndoStack.push({
+        index: currentIndex,
+        rating: 'bad',
+        card: card
+      });
+
+      if (window.SwipeSupabase) {
+        window.SwipeSupabase.submitRating(card, 'bad', []);
+      }
+
+      showToast(`❌ Rated as BAD`);
+
+      setTimeout(() => {
+        currentIndex++;
+        localStorage.setItem('psir_swipe_idx_' + ACTIVE_DECK_ID, currentIndex.toString());
+        renderStack();
+      }, 320);
+    }
+
+    function undoLastCard() {
+      if (currentIndex > 0) {
+        currentIndex--;
+        localStorage.setItem('psir_swipe_idx_' + ACTIVE_DECK_ID, currentIndex.toString());
+        renderStack();
+        showToast('Returned to previous card');
+      } else {
+        showToast('At the beginning of deck');
+      }
+    }
+
+    // Gesture Handling (Left/Right Touch & Mouse Drag Physics)
+    function attachSwipeGestures(cardEl) {
+      if (!cardEl) return;
+
+      let startY = 0;
+      let startX = 0;
+      let isDragging = false;
+      const stampGood = document.getElementById('stamp-good');
+      const stampBad = document.getElementById('stamp-bad');
+
+      function onStart(e) {
+        if (e.target.closest('button')) {
+          return;
+        }
+        dismissGestureHint();
+        isDragging = true;
+        const point = e.touches ? e.touches[0] : e;
+        startY = point.clientY;
+        startX = point.clientX;
+        cardEl.classList.remove('reset-spring');
+      }
+
+      function onMove(e) {
+        if (!isDragging) return;
+        const point = e.touches ? e.touches[0] : e;
+        const dx = point.clientX - startX;
+        const dy = point.clientY - startY;
+
+        // Dynamic tilt rotation
+        const rotate = (dx * 0.05);
+        cardEl.style.transform = `translate3d(${dx}px, ${dy * 0.25}px, 0) rotate(${rotate}deg)`;
+
+        // Show Stamps progressively
+        if (dx > 20) {
+          if (stampGood) stampGood.style.opacity = Math.min(1, (dx - 20) / 70);
+          if (stampBad) stampBad.style.opacity = '0';
+        } else if (dx < -20) {
+          if (stampBad) stampBad.style.opacity = Math.min(1, Math.abs(dx + 20) / 70);
+          if (stampGood) stampGood.style.opacity = '0';
+        } else {
+          if (stampGood) stampGood.style.opacity = '0';
+          if (stampBad) stampBad.style.opacity = '0';
+        }
+      }
+
+      function onEnd(e) {
+        if (!isDragging) return;
+        isDragging = false;
+        const point = e.changedTouches ? e.changedTouches[0] : e;
+        const dx = point.clientX - startX;
+
+        // Threshold: 70px to trigger Left (Bad) or Right (Good)
+        if (dx > 70) {
+          swipeRightGood();
+        } else if (dx < -70) {
+          swipeLeftBad();
+        } else {
+          // Reset card smoothly back to center
+          cardEl.classList.add('reset-spring');
+          cardEl.style.transform = 'translate3d(0, 0, 0) scale(1)';
+          if (stampGood) stampGood.style.opacity = '0';
+          if (stampBad) stampBad.style.opacity = '0';
+        }
+      }
+
+      // Touch events
+      cardEl.addEventListener('touchstart', onStart, { passive: true });
+      cardEl.addEventListener('touchmove', onMove, { passive: true });
+      cardEl.addEventListener('touchend', onEnd);
+
+      // Mouse drag events
+      cardEl.addEventListener('mousedown', onStart);
+      window.addEventListener('mousemove', onMove);
+      window.addEventListener('mouseup', onEnd);
+    }
+
+    // Keyboard Shortcuts (Left Arrow = Bad, Right Arrow = Good)
+    function bindKeyboardShortcuts() {
+      window.addEventListener('keydown', (e) => {
+        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+
+        if (e.key === 'ArrowRight') {
+          e.preventDefault();
+          swipeRightGood();
+        } else if (e.key === 'ArrowLeft') {
+          e.preventDefault();
+          swipeLeftBad();
+        } else if (e.key === 'z' || e.key === 'Z') {
+          undoLastCard();
+        }
+      });
+    }
+
+    // Completion Screen
+    function renderCompletionScreen() {
+      if (window.SwipeSound && window.SwipeSound.playCelebration) {
+        window.SwipeSound.playCelebration();
+      }
+
+      deckStage.innerHTML = `
+        <div class="completion-card">
+          <div class="celebrate-icon">🎉</div>
+          <h2 class="completion-title">Deck Completed!</h2>
+          <p class="completion-sub">You have swiped and evaluated all ${cardDeck.length} value addition tiles in this deck. All Good & Bad feedback has been recorded and synced to Supabase.</p>
+          <div style="display: flex; flex-direction: column; gap: 0.65rem; margin-top: 1.5rem;">
+            <button class="deck-pill active" style="justify-content: center; padding: 0.75rem;" onclick="resetCurrentDeck()">🔄 Restart This Deck</button>
+            <a href="index.html" class="deck-pill" style="justify-content: center; padding: 0.75rem;">🌐 Browse Another Copy Deck</a>
+            <button class="aux-btn" style="justify-content: center;" onclick="openHistoryModal()">📊 View & Export Rated Feedback</button>
+          </div>
+        </div>
+      `;
+    }
+
+    function resetCurrentDeck() {
+      currentIndex = 0;
+      localStorage.removeItem('psir_swipe_idx_' + ACTIVE_DECK_ID);
+      localStorage.removeItem('psir_first_gesture_seen');
+      hasSwipedFirstCard = false;
+      renderStack();
+    }
+
+    // Supabase Modal & Connection Management
+    function openSupabaseModal() {
+      const modal = document.getElementById('modal-supabase');
+      const urlInput = document.getElementById('supabase-url-input');
+      const keyInput = document.getElementById('supabase-key-input');
+      const feedback = document.getElementById('supabase-test-feedback');
+
+      if (window.SwipeSupabase) {
+        urlInput.value = window.SwipeSupabase.config.url || '';
+        keyInput.value = window.SwipeSupabase.config.anonKey || '';
+      }
+      feedback.innerHTML = '';
+      modal.classList.add('open');
+    }
+
+    function closeSupabaseModal() {
+      document.getElementById('modal-supabase').classList.remove('open');
+    }
+
+    async function saveSupabaseSettings() {
+      const url = document.getElementById('supabase-url-input').value;
+      const key = document.getElementById('supabase-key-input').value;
+      const feedback = document.getElementById('supabase-test-feedback');
+
+      feedback.innerHTML = '<span style="color: var(--accent-cyan);">Testing Supabase connection...</span>';
+
+      const res = await window.SwipeSupabase.saveConfig(url, key);
+      if (res.success) {
+        feedback.innerHTML = `<span style="color: var(--accent-emerald);">✔ ${res.message}</span>`;
+        setTimeout(() => {
+          closeSupabaseModal();
+          showToast('Supabase Connected & Synced!');
+        }, 900);
+      } else {
+        feedback.innerHTML = `<span style="color: var(--accent-rose);">✖ ${res.message}</span>`;
+      }
+    }
+
+    // History & Export Modal
+    function openHistoryModal() {
+      const modal = document.getElementById('modal-history');
+      const container = document.getElementById('history-items-container');
+      const countLabel = document.getElementById('history-count-label');
+
+      const history = window.SwipeSupabase ? window.SwipeSupabase.getRatingsHistory() : [];
+      countLabel.innerText = `${history.length} total cards swiped`;
+
+      if (history.length === 0) {
+        container.innerHTML = '<p style="color: var(--text-muted); font-size: 0.85rem; text-align: center; padding: 2rem 0;">No tiles swiped yet. Swipe Left for Bad or Right for Good!</p>';
+      } else {
+        const goodCount = history.filter(h => h.rating === 'good').length;
+        const badCount = history.filter(h => h.rating === 'bad').length;
+
+        let summaryHtml = `
+          <div style="display: flex; gap: 0.75rem; margin-bottom: 0.75rem; font-size: 0.8rem; font-weight: 700;">
+            <span style="color: #34d399; background: rgba(16,185,129,0.12); padding: 3px 10px; border-radius: 20px;">💚 Good: ${goodCount}</span>
+            <span style="color: var(--accent-rose); background: rgba(244,63,94,0.12); padding: 3px 10px; border-radius: 20px;">❌ Bad: ${badCount}</span>
+          </div>
+        `;
+
+        container.innerHTML = summaryHtml + history.slice().reverse().map(item => `
+          <div style="background: rgba(0,0,0,0.25); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 0.75rem 1rem; margin-bottom: 0.5rem;">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 0.5rem; margin-bottom: 0.35rem;">
+              <span style="font-weight: 700; font-size: 0.88rem; color: var(--text-primary);">${item.content_title}</span>
+              <span style="font-weight: 800; font-size: 0.82rem; padding: 2px 8px; border-radius: 4px; ${item.rating === 'good' ? 'color: #34d399; background: rgba(16,185,129,0.15);' : 'color: var(--accent-rose); background: rgba(244,63,94,0.15);'}">${item.rating === 'good' ? '✔ GOOD' : '✕ BAD'}</span>
+            </div>
+            <div style="font-size: 0.75rem; color: var(--accent-rose); font-weight: 600; margin-bottom: 0.25rem;">― ${item.author_attribution}</div>
+            <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.7rem; color: var(--text-muted);">
+              <span>${item.copy_id.toUpperCase()} • ${item.category}</span>
+            </div>
+          </div>
+        `).join('');
+      }
+
+      modal.classList.add('open');
+    }
+
+    function closeHistoryModal() {
+      document.getElementById('modal-history').classList.remove('open');
+    }
+
+    // Theme Toggle
+    function toggleTheme() {
+      const current = document.documentElement.getAttribute('data-theme');
+      const next = current === 'light' ? 'dark' : 'light';
+      document.documentElement.setAttribute('data-theme', next);
+      localStorage.setItem('psir_theme', next);
+    }
+
+    // Toast Utility
+    function showToast(msg) {
+      const toastEl = document.getElementById('app-toast');
+      const msgEl = document.getElementById('toast-msg');
+      if (!toastEl || !msgEl) return;
+      msgEl.innerText = msg;
+      toastEl.classList.add('show');
+      setTimeout(() => {
+        toastEl.classList.remove('show');
+      }, 1800);
+    }
+
+    // Run on load
+    window.addEventListener('DOMContentLoaded', () => {
+      const savedTheme = localStorage.getItem('psir_theme');
+      if (savedTheme) {
+        document.documentElement.setAttribute('data-theme', savedTheme);
+      }
+      initApp();
+    });
+  </script>
+</body>
+</html>
